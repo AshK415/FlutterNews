@@ -34,8 +34,8 @@ class MediaList extends HookConsumerWidget {
                   ),
                   child: Image.memory(
                     data.selected[currentIdx.value].thumbnail!,
-                    width: 120,
-                    height: 90,
+                    width: 150,
+                    height: 200,
                     fit: BoxFit.cover,
                   ),
                 )
