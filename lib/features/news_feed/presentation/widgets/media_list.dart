@@ -15,10 +15,8 @@ class MediaList extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedMedia = useState<List<Media>>(List.empty(growable: true));
     //final currentPage = useState(0);
     final currentIdx = useState(0);
-    final lastIdx = useState(0);
     final galleryProvider = ref.watch(galleryFetchProvider(album, 0));
     return galleryProvider.when(
       data: (data) {
@@ -56,20 +54,20 @@ class MediaList extends HookConsumerWidget {
                     asset: data.fetchedImages![i],
                     isSelected: isPreviouslySelected(
                       data.fetchedImages![i],
-                      selectedMedia.value,
+                      data.selected,
                     ),
                     onSelected: (isSelected, media) {
                       if (isSelected) {
                         ref
                             .read(galleryFetchProvider(album, 0).notifier)
                             .addMedia(media);
-                        lastIdx.value = currentIdx.value;
-                        currentIdx.value = i;
+                        // lastIdx.value = currentIdx.value;
+                        // currentIdx.value = i;
                       } else {
                         ref
                             .read(galleryFetchProvider(album, 0).notifier)
                             .removeMedia(media);
-                        currentIdx.value = lastIdx.value;
+                        //currentIdx.value = lastIdx.value;
                       }
                     },
                   ),
