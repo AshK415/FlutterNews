@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_news/features/news_feed/presentation/widgets/photos_sheet.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 
 class FeedsPage extends HookConsumerWidget {
   const FeedsPage({super.key});
@@ -14,8 +13,6 @@ class FeedsPage extends HookConsumerWidget {
       body: Container(),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          //picker.pickMultiImage().then((value) => null);
-          //await _photosSheet(context);
           await _photosSheet(context);
         },
         child: const Icon(Icons.add),
@@ -26,6 +23,15 @@ class FeedsPage extends HookConsumerWidget {
   Future<dynamic> _photosSheet(BuildContext context) {
     return showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      isDismissible: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(8),
+          topRight: Radius.circular(8),
+        ),
+      ),
       builder: (ctx) => const PhotosSheet(),
     );
   }

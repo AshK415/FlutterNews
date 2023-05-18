@@ -3,52 +3,149 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:flutter_news/features/news_feed/presentation/widgets/media_tile.dart';
+import 'package:flutter_news/features/news_feed/presentation/providers/gallery_fetch.dart';
+import 'package:flutter_news/features/news_feed/presentation/widgets/media_container.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:photo_manager/photo_manager.dart';
 
-class MediaList extends HookWidget {
+class MediaList extends HookConsumerWidget {
   const MediaList({required this.album, required this.previousList, super.key});
   final AssetPathEntity album;
   final List<Media> previousList;
 
   @override
-  Widget build(BuildContext context) {
-    final selectedMedia = useState<List<Media>>([]);
-    final lastPage = useState(0);
-    final currentPage = useState(0);
-    final mediaList = useState<List<Widget>>([]);
-
-    // useEffect(() {
-    //   _fetchMedia(lastPage, currentPage, mediaList, selectedMedia);
-    //   return;
-    // });
-
-    return FutureBuilder<bool>(
-      future: _fetchMedia(
-          lastPage.value, currentPage.value, mediaList, selectedMedia),
-      builder: (ctx, snapshot) {
-        if (snapshot.hasData) {
-          print('OP length');
-          print(mediaList.value.length);
-          return GridView.builder(
-            itemCount: mediaList.value.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              mainAxisSpacing: 4,
-              crossAxisSpacing: 4,
-              crossAxisCount: 4,
-            ),
-            itemBuilder: (c, i) => mediaList.value[i],
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectedMedia = useState<List<Media>>(List.empty(growable: true));
+    //final currentPage = useState(0);
+    final currentIdx = useState(0);
+    final lastIdx = useState(0);
+    final galleryProvider = ref.watch(galleryFetchProvider(album, 0));
+    return galleryProvider.when(
+      data: (data) {
+        if (data.fetchedImages!.isNotEmpty) {
+          return Column(
+            children: [
+              if (data.selected.isNotEmpty)
+                Container(
+                  width: 100,
+                  height: 150,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.amber, width: 2),
+                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.grey.shade50,
+                  ),
+                  child: Image.memory(
+                    data.selected[currentIdx.value].thumbnail!,
+                    width: 120,
+                    height: 90,
+                    fit: BoxFit.cover,
+                  ),
+                )
+              else
+                Container(),
+              Expanded(
+                child: GridView.builder(
+                  itemCount: data.fetchedImages!.length,
+                  shrinkWrap: true,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    mainAxisSpacing: 4,
+                    crossAxisSpacing: 4,
+                    crossAxisCount: 4,
+                  ),
+                  itemBuilder: (c, i) => MediaContainer(
+                    asset: data.fetchedImages![i],
+                    isSelected: isPreviouslySelected(
+                      data.fetchedImages![i],
+                      selectedMedia.value,
+                    ),
+                    onSelected: (isSelected, media) {
+                      if (isSelected) {
+                        ref
+                            .read(galleryFetchProvider(album, 0).notifier)
+                            .addMedia(media);
+                        lastIdx.value = currentIdx.value;
+                        currentIdx.value = i;
+                      } else {
+                        ref
+                            .read(galleryFetchProvider(album, 0).notifier)
+                            .removeMedia(media);
+                        currentIdx.value = lastIdx.value;
+                      }
+                    },
+                  ),
+                ),
+              ),
+            ],
           );
-        } else if (snapshot.hasError) {
+        } else {
           return const Center(
-            child: Text('Got some error'),
+            child: Text('Unable to fetch images'),
           );
         }
-        return const Center(
-          child: CircularProgressIndicator(),
-        );
       },
+      error: (e, st) => Center(
+        child: Text(e.toString()),
+      ),
+      loading: () => const Center(
+        child: CircularProgressIndicator(),
+      ),
     );
+
+    // return Column(
+    //   children: [
+    //     ValueListenableBuilder<List<Media>>(
+    //       valueListenable: selectedMedia,
+    //       builder: (cc, md, _) => Text('${md.length}'),
+    //     ),
+    //     FutureBuilder<List<AssetEntity>?>(
+    //       future: _fetchAllMedia(currentPage.value),
+    //       builder: (ctx, snapshot) {
+    //         if (snapshot.hasData) {
+    //           final medias = snapshot.data;
+    //           if (medias == null) {
+    //             return const Center(
+    //               child: Text('Unable to fetch pictures'),
+    //             );
+    //           }
+    //           return Expanded(
+    //             child: GridView.builder(
+    //               itemCount: medias.length,
+    //               shrinkWrap: true,
+    //               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+    //                 mainAxisSpacing: 4,
+    //                 crossAxisSpacing: 4,
+    //                 crossAxisCount: 4,
+    //               ),
+    //               itemBuilder: (c, i) => MediaContainer(
+    //                 asset: medias[i],
+    //                 isSelected:
+    //                     isPreviouslySelected(medias[i], selectedMedia.value),
+    //                 onSelected: (isSelected, media) {
+    //                   if (isSelected) {
+    //                     final tmp = selectedMedia.value..add(media);
+    //                     selectedMedia.value = tmp;
+    //                   } else {
+    //                     final tmp = selectedMedia.value
+    //                       ..removeWhere((element) => element.id == media.id);
+    //                     selectedMedia.value = tmp;
+    //                   }
+    //                   print(selectedMedia.value);
+    //                 },
+    //               ),
+    //             ),
+    //           );
+    //         } else if (snapshot.hasError) {
+    //           return const Center(
+    //             child: Text('Got some error'),
+    //           );
+    //         }
+    //         return const Center(
+    //           child: CircularProgressIndicator(),
+    //         );
+    //       },
+    //     ),
+    //   ],
+    // );
   }
 
   // NotificationListener<ScrollNotification>(
@@ -68,73 +165,6 @@ class MediaList extends HookWidget {
   //         itemBuilder: (c, i) => mediaList.value[i],
   //       ),
   //     )
-
-  Future<bool> _fetchMedia(
-    int lastPage,
-    int currentPage,
-    ValueNotifier<List<Widget>> mediaList,
-    ValueNotifier<List<Media>> selectedMedia,
-  ) async {
-    //lastPage. = currentPage.value;
-    final result = await PhotoManager.requestPermissionExtend();
-    if (result == PermissionState.authorized ||
-        result == PermissionState.limited) {
-      final media = await album.getAssetListPaged(page: currentPage, size: 60);
-      final temp = <Widget>[];
-      //print('Printing media');
-      //print(media);
-      for (final asset in media) {
-        //print('Processing for: ${asset.id}');
-        temp.add(
-          Container(
-            height: 80,
-            width: 80,
-            color: Colors.black54,
-            child: FutureBuilder<Uint8List?>(
-              future: asset.thumbnailData,
-              builder: (_, snap) {
-                if (snap.hasData) {
-                  if (snap.data != null) {
-                    return Image.memory(
-                      snap.data!,
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.cover,
-                    );
-                  }
-                } else if (snap.hasError) {
-                  return const Center(
-                    child: Text('Got some error'),
-                  );
-                }
-                return const Center(
-                  child: CircularProgressIndicator(),
-                );
-              },
-            ),
-          ),
-          // MediaTile(
-          //   media: asset,
-          //   onSelected: (isSelected, media) {
-          //     if (isSelected) {
-          //       selectedMedia.value.add(media);
-          //     } else {
-          //       selectedMedia.value
-          //           .removeWhere((element) => element.id == media.id);
-          //     }
-          //   },
-          //   isSelected: isPreviouslySelected(asset, selectedMedia.value),
-          // ),
-        );
-      }
-      mediaList.value.addAll(temp);
-
-      return true;
-    } else {
-      await PhotoManager.openSetting();
-    }
-    return false;
-  }
 
   bool isPreviouslySelected(AssetEntity media, List<Media> selectedMedias) {
     var isSelected = false;

@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_news/features/news_feed/presentation/widgets/album_selector.dart';
 import 'package:flutter_news/features/news_feed/presentation/widgets/media_list.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:photo_manager/photo_manager.dart';
-import 'package:sliding_up_panel/sliding_up_panel.dart';
 
 class PhotosSheet extends ConsumerWidget {
   const PhotosSheet({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final controller = PanelController();
     return Material(
       color: Colors.transparent,
       child: FutureBuilder<List<AssetPathEntity>?>(
@@ -25,8 +22,17 @@ class PhotosSheet extends ConsumerWidget {
                 children: [
                   SizedBox(
                     height: 36,
-                    child: Align(
-                      child: Text('${imgs.length}'),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('${imgs.length}'),
+                        IconButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          icon: const Icon(Icons.cancel),
+                        ),
+                      ],
                     ),
                   ),
                   const Divider(),
