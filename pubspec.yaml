@@ -8,7 +8,7 @@ environment:
 
 dependencies:
   cached_memory_image: ^1.3.1
-  dio: ^5.1.2
+  dio: ^5.2.0
   flutter:
     sdk: flutter
   flutter_hooks: ^0.18.6
